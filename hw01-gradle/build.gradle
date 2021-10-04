@@ -1,0 +1,21 @@
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java'
+    id 'com.github.johnrengelman.shadow'
+}
+
+dependencies {
+    // This dependency is used by the application.
+    implementation 'com.google.guava:guava'
+}
+
+shadowJar {
+    archiveBaseName.set('gradleHelloWorld')
+    archiveVersion.set('0.1')
+    archiveClassifier.set('')
+    manifest {
+        attributes 'Main-Class': 'ru.asamara56.HelloOtus'
+    }
+}
+
+tasks.build.dependsOn tasks.shadowJar
