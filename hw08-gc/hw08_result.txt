@@ -1,0 +1,18 @@
+Думаю больше 896 мб увеличивать размер памяти нет смысла.
+Получил такие данные:
+
+Xmx256m - OutOfMemoryError
+Xmx384m - spend msec:20238, sec:20
+Xmx512m - spend msec:18253, sec:18
+Xmx640m - spend msec:16724, sec:16
+Xmx768m - spend msec:17451, sec:17
+Xmx896m - spend msec:16113, sec:16
+Xmx1024m - spend msec:15931, sec:15
+Xmx1152m - spend msec:15818, sec:15
+Xmx1280m - spend msec:15806, sec:15
+Xmx1408m - spend msec:15572, sec:15
+Xmx1536m - spend msec:15404, sec:15
+Xmx1664m - spend msec:15873, sec:15
+Xmx1792m - spend msec:15243, sec:15
+Xmx1920m - spend msec:15387, sec:15
+Xmx2048m - spend msec:14880, sec:14
