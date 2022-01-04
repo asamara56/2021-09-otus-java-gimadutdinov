@@ -10,7 +10,6 @@ public class TestLoggingImpl implements TestLogging {
         System.out.println("Work calculation(int) method");
     }
 
-    @Log
     @Override
     public void calculation(int p1, int p2) {
         System.out.println("Work calculation(int, int) method");
