@@ -7,7 +7,6 @@ import ru.asamara56.annotations.Test;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.Map.Entry;
 
 public class TestRunner {
 
