@@ -6,19 +6,17 @@ public interface ATM {
 
     /**
      * Выдача купюр
-     * @param amount запрашиваемая сумма
-     * @return банкноты разного номиналаа
-     * @throws IllegalArgumentException если запрошенная сумма не может быть выдана
+     * @param number запрашиваемая сумма
+     * @return банкноты разного номинала
      */
-    Map<Banknote, Integer> getMoney(int amount) throws IllegalArgumentException;
+    Map<Banknote, Integer> getMoney(int number);
 
     /**
      * Внесение денег
      * @param money принятая банкоматом сумма
-     * @throws IllegalArgumentException если внесенная сумма некорректна (не кратна минимальной банкноте)
      * @return принятая сумма
      */
-    int addMoney(Map<Banknote, Integer> money) throws IllegalArgumentException;
+    int addMoney(Map<Banknote, Integer> money);
 
     /**
      * Запрос баланса

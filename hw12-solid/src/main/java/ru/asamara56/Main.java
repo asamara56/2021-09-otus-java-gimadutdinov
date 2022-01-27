@@ -2,15 +2,17 @@ package ru.asamara56;
 
 import ru.asamara56.atm.ATM;
 import ru.asamara56.atm.ATMImpl;
+import ru.asamara56.atm.Banknote;
 
 import java.util.Map;
 
 import static ru.asamara56.atm.Banknote.*;
 
+
 public class Main {
 
     public static void main(String[] args) {
-        final ATM atm = new ATMImpl();
+        final ATM atm = new ATMImpl(Banknote.values());
 
         System.out.println(" *** Пытаемся получить деньги при нулевом балансе *** ");
         System.out.println("Balance = " + atm.getBalance());

@@ -1,38 +1,40 @@
 package ru.asamara56.atm;
 
-import java.util.HashMap;
-import java.util.Map;
+import ru.asamara56.atm.cell.Cell;
+import ru.asamara56.atm.cell.CellImpl;
 
-import static ru.asamara56.atm.Banknote.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ATMImpl implements ATM {
 
-    private final Map<Banknote, Integer> banknoteStore = new HashMap<>();
-
+    private final List<Cell> banknoteStore = new ArrayList<>();
     private int balance = 0;
 
-    public ATMImpl() {
-        banknoteStore.putAll(Map.of(
-                HUNDRED, 0,
-                TWO_HUNDRED, 0,
-                FIVE_HUNDRED, 0,
-                THOUSAND, 0));
+
+    public ATMImpl(Banknote[] banknotes) {
+        this.banknoteStore.addAll(
+                Arrays.stream(banknotes)
+                .map(CellImpl::new)
+                .collect(Collectors.toList())
+        );
+    }
+
+
+    @Override
+    public Map<Banknote, Integer> getMoney(int number) {
+        if (balance < number) {
+            throw new IllegalArgumentException("Запрошенная сумма " + number + " рублей не может быть выдана. Баланс " + balance + " рублей");
+        }
+        if (number % 100 != 0) {
+            throw new IllegalArgumentException("Запрошенная сумма " + number + " рублей не может быть выдана. Введите сумму, кратную 100");
+        }
+        balance -= number;
+        return processGet(number);
     }
 
     @Override
-    public Map<Banknote, Integer> getMoney(int amount) throws IllegalArgumentException {
-        if (balance < amount) {
-            throw new IllegalArgumentException("Запрошенная сумма " + amount + " рублей не может быть выдана. Баланс " + balance + " рублей");
-        }
-        if (amount % 100 != 0) {
-            throw new IllegalArgumentException("Запрошенная сумма " + amount + " рублей не может быть выдана. Введите сумму, кратную 100");
-        }
-        balance -= amount;
-        return processGet(amount);
-    }
-
-    @Override
-    public int addMoney(Map<Banknote, Integer> banknotes)  throws IllegalArgumentException {
+    public int addMoney(Map<Banknote, Integer> banknotes) {
         final int amount = processAdd(banknotes);
         balance += amount;
         return amount;
@@ -44,33 +46,29 @@ public class ATMImpl implements ATM {
     }
 
     private Map<Banknote, Integer> processGet(int amount) {
-        final var returnVal = new HashMap<Banknote, Integer>();
+        final var result = new HashMap<Banknote, Integer>();
 
-        for (Banknote item : Banknote.values()) {
-            if (banknoteStore.get(item) > 0) {
-                while (amount - item.getDenomination() >= 0) {
-                    banknoteStore.merge(item, -1, Integer::sum);
-                    returnVal.merge(item, 1, Integer::sum);
-                    amount -= item.getDenomination();
-                }
+        for (Cell cell : banknoteStore) {
+            int count = 0;
+            var banknote = cell.getBanknoteType();
+
+            while (amount >= banknote.getDenomination() && cell.getNumber() > count) {
+                amount -= cell.getMoney();
+                count++;
             }
+            result.put(banknote, count);
         }
-        return returnVal;
+        return result;
     }
 
     private int processAdd(Map<Banknote, Integer> banknotes) {
-        final var banknotesCopy = new HashMap<>(banknotes);
-        var returnVal = 0;
+        int result = 0;
 
-        for (Banknote item : Banknote.values()) {
-            if (banknotesCopy.get(item) != null) {
-                while (banknotesCopy.get(item) != 0) {
-                    banknoteStore.merge(item, 1, Integer::sum);
-                    banknotesCopy.merge(item, -1, Integer::sum);
-                    returnVal += item.getDenomination();
-                }
+        for (Cell cell : banknoteStore) {
+            if (banknotes.containsKey(cell.getBanknoteType())) {
+                result += cell.addMoney(banknotes.get(cell.getBanknoteType()));
             }
         }
-        return returnVal;
+        return result;
     }
 }
