@@ -4,7 +4,6 @@ import java.util.LinkedList;
 
 public class CustomerReverseOrder {
 
-    // надо реализовать методы этого класса
     //надо подобрать подходящую структуру данных, тогда решение будет в "две строчки"
     private final LinkedList<Customer> arrayList = new LinkedList<>();
 
