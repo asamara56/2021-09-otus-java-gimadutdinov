@@ -6,41 +6,52 @@ import java.util.stream.Collectors;
 
 public class EntitySQLMetaDataImpl implements EntitySQLMetaData {
 
-    private final EntityClassMetaData<?> entityClassMetaData;
+    private final String selectAllSql;
+    private final String selectByIdSql;
+    private final String insertSql;
+    private final String updateSql;
+
 
     public EntitySQLMetaDataImpl(EntityClassMetaData<?> entityClassMetaData) {
-        this.entityClassMetaData = entityClassMetaData;
+        String className = entityClassMetaData.getName();
+        String idFieldName = entityClassMetaData.getIdField().getName();
+        List<Field> fields = entityClassMetaData.getFieldsWithoutId();
+
+        this.selectAllSql = "SELECT * FROM " + className;
+
+        this.selectByIdSql = "SELECT * FROM " + className
+                + " WHERE " + idFieldName + " = ?";
+
+        this.insertSql = "INSERT INTO " + className
+                + fields.stream()
+                        .map(Field::getName)
+                        .collect(Collectors.joining(",", "(", ")"))
+                + " VALUES (?" + (fields.size() > 1 ? ", ?".repeat(fields.size() - 1) + ")" : ")");
+
+        this.updateSql = "UPDATE " + className
+                + " SET " + fields.stream()
+                        .map(field -> field.getName() + " = ?")
+                        .collect(Collectors.joining(","))
+                + " WHERE ID = " + idFieldName;
     }
 
     @Override
     public String getSelectAllSql() {
-        return "SELECT * FROM " + entityClassMetaData.getName();
+        return selectAllSql;
     }
 
     @Override
     public String getSelectByIdSql() {
-        return "SELECT * FROM " + entityClassMetaData.getName()
-                + " WHERE " + entityClassMetaData.getIdField().getName() + " = ?";
+        return selectByIdSql;
     }
 
     @Override
     public String getInsertSql() {
-        List<Field> fields = entityClassMetaData.getFieldsWithoutId();
-        int amount = fields.size();
-        return "INSERT INTO " + entityClassMetaData.getName()
-                + fields.stream()
-                        .map(Field::getName)
-                        .collect(Collectors.joining(",", "(", ")"))
-                + " VALUES (?" + (amount > 1 ? ", ?".repeat(amount - 1) + ")" : ")");
+        return insertSql;
     }
 
     @Override
     public String getUpdateSql() {
-        return "UPDATE " + entityClassMetaData.getName()
-                + " SET " + entityClassMetaData.getFieldsWithoutId().stream()
-                                .skip(1)
-                                .map(field -> field.getName() + " = ?")
-                                .collect(Collectors.joining(","))
-                + " WHERE ID = " + entityClassMetaData.getIdField();
+        return updateSql;
     }
 }

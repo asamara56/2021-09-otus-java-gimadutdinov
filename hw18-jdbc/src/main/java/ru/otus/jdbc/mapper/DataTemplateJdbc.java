@@ -73,13 +73,11 @@ public class DataTemplateJdbc<T> implements DataTemplate<T> {
         List<Field> fields = entityClassMetaData.getFieldsWithoutId();
         List<Object> params = new ArrayList<>();
 
-        for (var field : fields) {
-            /* чтобы не трогать приватные поля, достаю значение через геттер */
-            //field.setAccessible(true);
-            params.add(getFieldValue(field, object));
-        }
-
         try {
+            for (var field : fields) {
+                field.setAccessible(true);
+                params.add(field.get(object));
+            }
             return dbExecutor.executeStatement(connection, entitySQLMetaData.getInsertSql(), params);
         } catch (Exception e) {
             throw new DataTemplateException(e);
@@ -91,21 +89,23 @@ public class DataTemplateJdbc<T> implements DataTemplate<T> {
         List<Field> fields = entityClassMetaData.getFieldsWithoutId();
         List<Object> params = new ArrayList<>();
 
-        for (var field : fields) {
-            /* чтобы не трогать приватные поля, достаю значение через геттер */
-            //field.setAccessible(true);
-            params.add(getFieldValue(field, object));
-        }
         try {
+            for (var field : fields) {
+                field.setAccessible(true);
+                params.add(field.get(object));
+            }
             dbExecutor.executeStatement(connection, entitySQLMetaData.getUpdateSql(), params);
         } catch (Exception e) {
             throw new DataTemplateException(e);
         }
     }
 
-    private Object getFieldValue(Field field, Object obj) {
+
+    /* чтобы не трогать приватные поля, можно доставать значения через геттер */
+    /*private Object getFieldValue(Field field, Object obj) {
         for (Method method : obj.getClass().getDeclaredMethods()) {
-            if ((method.getName().startsWith("get")) && method.getName().toLowerCase().endsWith(field.getName().toLowerCase())) {
+            if ((method.getName().startsWith("get") || method.getName().startsWith("is"))
+                    && method.getName().toLowerCase().endsWith(field.getName().toLowerCase())) {
                 try {
                     return method.invoke(obj);
                 } catch (IllegalAccessException | InvocationTargetException e) {
@@ -114,14 +114,17 @@ public class DataTemplateJdbc<T> implements DataTemplate<T> {
             }
         }
         return null;
-    }
+    }*/
 
-    private T createInstance(List<Field> fields, Constructor<?> constructor, ResultSet rs) throws ReflectiveOperationException {
+    private T createInstance(List<Field> fields, Constructor<?> constructor, ResultSet rs) throws ReflectiveOperationException, SQLException {
 
         Object obj = constructor.newInstance();
 
         for (var field : fields) {
-            for (Method method : obj.getClass().getDeclaredMethods()) {
+            field.setAccessible(true);
+            field.set(obj, rs.getObject(field.getName()));
+            /* чтобы не трогать приватные поля, можно задавать значения через сеттер */
+            /*for (Method method : obj.getClass().getDeclaredMethods()) {
                 if ((method.getName().startsWith("set")) && method.getName().toLowerCase().endsWith(field.getName().toLowerCase())) {
                     try {
                         method.invoke(obj, rs.getObject(field.getName()));
@@ -129,7 +132,7 @@ public class DataTemplateJdbc<T> implements DataTemplate<T> {
                         e.printStackTrace();
                     }
                 }
-            }
+            }*/
         }
         return (T) obj;
     }

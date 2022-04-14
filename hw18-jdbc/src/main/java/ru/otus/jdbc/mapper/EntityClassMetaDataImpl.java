@@ -10,10 +10,27 @@ import java.util.stream.Collectors;
 
 public class EntityClassMetaDataImpl<T> implements EntityClassMetaData<T> {
 
-    private Class<?> clazz;
+    private final Class<?> clazz;
+    private final Field idField;
+    private final List<Field> allFields;
+    private final List<Field> fieldsWithoutId;
+    private final Constructor<T> constructor;
+
 
     public EntityClassMetaDataImpl(Class<T> clazz) {
         this.clazz = clazz;
+        this.idField = Arrays.stream(clazz.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .findFirst().orElseThrow();
+        this.allFields = List.of(clazz.getDeclaredFields());
+        this.fieldsWithoutId = Arrays.stream(clazz.getDeclaredFields())
+                .filter(field -> !field.isAnnotationPresent(Id.class))
+                .collect(Collectors.toList());
+        try {
+            this.constructor = clazz.getDeclaredConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -23,29 +40,21 @@ public class EntityClassMetaDataImpl<T> implements EntityClassMetaData<T> {
 
     @Override
     public Constructor<T> getConstructor() {
-        try {
-            return (Constructor<T>) clazz.getDeclaredConstructor();
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        return constructor;
     }
 
     @Override
     public Field getIdField() {
-        return Arrays.stream(clazz.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Id.class))
-                .findFirst().orElseThrow();
+        return idField;
     }
 
     @Override
     public List<Field> getAllFields() {
-        return List.of(clazz.getDeclaredFields());
+        return allFields;
     }
 
     @Override
     public List<Field> getFieldsWithoutId() {
-        return Arrays.stream(clazz.getDeclaredFields())
-                .filter(field -> !field.isAnnotationPresent(Id.class))
-                .collect(Collectors.toList());
+        return fieldsWithoutId;
     }
 }

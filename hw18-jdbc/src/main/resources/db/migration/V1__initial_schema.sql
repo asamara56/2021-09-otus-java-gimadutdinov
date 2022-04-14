@@ -1,3 +1,4 @@
+
 create table manager
 (
     no     bigserial not null primary key,
