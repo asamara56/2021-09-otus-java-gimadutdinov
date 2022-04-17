@@ -7,12 +7,12 @@ import ru.otus.core.repository.executor.DbExecutorImpl;
 import ru.otus.core.sessionmanager.TransactionRunnerJdbc;
 import ru.otus.crm.datasource.DriverManagerDataSource;
 import ru.otus.crm.model.Client;
-import ru.otus.crm.model.Manager;
 import ru.otus.crm.service.DbServiceClientImpl;
-import ru.otus.crm.service.DbServiceManagerImpl;
 import ru.otus.jdbc.mapper.*;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HomeWork {
     private static final String URL = "jdbc:postgresql://localhost:5430/demoDB";
@@ -22,39 +22,94 @@ public class HomeWork {
     private static final Logger log = LoggerFactory.getLogger(HomeWork.class);
 
     public static void main(String[] args) {
-// Общая часть
+
         var dataSource = new DriverManagerDataSource(URL, USER, PASSWORD);
         flywayMigrations(dataSource);
         var transactionRunner = new TransactionRunnerJdbc(dataSource);
         var dbExecutor = new DbExecutorImpl();
 
-// Работа с клиентом
         EntityClassMetaData<Client> entityClassMetaDataClient = new EntityClassMetaDataImpl<>(Client.class);
         EntitySQLMetaData entitySQLMetaDataClient = new EntitySQLMetaDataImpl(entityClassMetaDataClient);
         var dataTemplateClient = new DataTemplateJdbc<Client>(dbExecutor, entitySQLMetaDataClient, entityClassMetaDataClient); //реализация DataTemplate, универсальная
-
-// Код дальше должен остаться
         var dbServiceClient = new DbServiceClientImpl(transactionRunner, dataTemplateClient);
-        dbServiceClient.saveClient(new Client("dbServiceFirst"));
 
-        var clientSecond = dbServiceClient.saveClient(new Client("dbServiceSecond"));
-        var clientSecondSelected = dbServiceClient.getClient(clientSecond.getId())
-                .orElseThrow(() -> new RuntimeException("Client not found, id:" + clientSecond.getId()));
-        log.info("clientSecondSelected:{}", clientSecondSelected);
+        List<Long> ids = new ArrayList<>();
 
-// Сделайте тоже самое с классом Manager (для него надо сделать свою таблицу)
+        for (int i = 1; i < 40001; i++) {
+            ids.add(dbServiceClient
+                    .saveClient(new Client("client_" + i))
+                    .getId());
 
-        EntityClassMetaData<Manager> entityClassMetaDataManager = new EntityClassMetaDataImpl<>(Manager.class);
-        EntitySQLMetaData entitySQLMetaDataManager = new EntitySQLMetaDataImpl(entityClassMetaDataManager);
-        var dataTemplateManager = new DataTemplateJdbc<Manager>(dbExecutor, entitySQLMetaDataManager, entityClassMetaDataManager);
+            if (i % 100 == 0) {
+                System.out.println("Cache size: " + dbServiceClient.cacheSize());
+                /**
+                 * Во время наполнения кэша наблюдал интересную вещь в выводе println()
+                 * В первый раз размер кэша сбросился примерно на 2000 элементов,
+                 * затем как будто "растянулся" и второй сброс кэша произошел около 23300 элементов
+                 */
+            }
+        }
 
-        var dbServiceManager = new DbServiceManagerImpl(transactionRunner, dataTemplateManager);
-        dbServiceManager.saveManager(new Manager("ManagerFirst"));
 
-        var managerSecond = dbServiceManager.saveManager(new Manager("ManagerSecond"));
-        var managerSecondSelected = dbServiceManager.getManager(managerSecond.getNo())
-                .orElseThrow(() -> new RuntimeException("Manager not found, id:" + managerSecond.getNo()));
-        log.info("managerSecondSelected:{}", managerSecondSelected);
+        long start = System.currentTimeMillis();
+        log.info("START get clients WITHOUT cache");
+
+        for (long i : ids) {
+            dbServiceClient.getClient(i);
+
+            /*if (i % 100 == 0) {
+                System.out.println("Cache size: " + dbServiceClient.cacheSize());
+            }*/
+        }
+        log.info("duration WITHOUT cache. Millis:{}", System.currentTimeMillis() - start);
+
+
+        start = System.currentTimeMillis();
+        log.info("START get clients WITH cache");
+
+        for (long i : ids) {
+            dbServiceClient.getClientWithCache(i);
+
+            /*if (i % 100 == 0) {
+                System.out.println("Cache size: " + dbServiceClient.cacheSize());
+            }*/
+        }
+        log.info("duration WITH cache. Millis:{}", System.currentTimeMillis() - start);
+
+        /**
+         * При работе с кэшом выигрыш во времени получал всегда. Но результат зависит от количества элементов.
+         * На моем железе 16ГБ ОЗУ результаты следующие:
+         *
+         *  - при количестве элементов 100
+         *  {
+         *      12:31:04.787 [main] INFO ru.otus.HomeWork - duration WITHOUT cache. Millis:29
+         *      12:31:04.787 [main] INFO ru.otus.HomeWork - duration WITH cache. Millis:0
+         *  }
+         *
+         *  - при количестве элементов 2000
+         *  {
+         *      12:29:26.001 [main] INFO ru.otus.HomeWork - duration WITHOUT cache. Millis:389
+         *      12:29:26.005 [main] INFO ru.otus.HomeWork - duration WITH cache. Millis:4
+         *  }
+         *
+         *  - при количестве элементов 10000
+         *  {
+         *      12:27:41.776 [main] INFO ru.otus.HomeWork - duration WITHOUT cache. Millis:1335
+         *      12:27:41.782 [main] INFO ru.otus.HomeWork - duration WITH cache. Millis:6
+         *  }
+         *
+         *  - при количестве элементов 20000
+         *  {
+         *      12:32:04.785 [main] INFO ru.otus.HomeWork - duration WITHOUT cache. Millis:2184
+         *      12:32:05.311 [main] INFO ru.otus.HomeWork - duration WITH cache. Millis:526
+         *  }
+         *
+         *  - при количестве элементов 40000
+         *  {
+         *      12:47:37.135 [main] INFO ru.otus.HomeWork - duration WITHOUT cache. Millis:4470
+         *      12:47:37.148 [main] INFO ru.otus.HomeWork - duration WITH cache. Millis:13
+         *  }
+         */
     }
 
     private static void flywayMigrations(DataSource dataSource) {

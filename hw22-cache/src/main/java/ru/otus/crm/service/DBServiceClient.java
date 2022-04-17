@@ -7,7 +7,11 @@ import java.util.Optional;
 
 public interface DBServiceClient {
 
+    long cacheSize();
+
     Client saveClient(Client client);
+
+    Optional<Client> getClientWithCache(long id);
 
     Optional<Client> getClient(long id);
 

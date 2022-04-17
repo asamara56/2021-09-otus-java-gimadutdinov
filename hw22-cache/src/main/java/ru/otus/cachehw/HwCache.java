@@ -3,6 +3,8 @@ package ru.otus.cachehw;
 
 public interface HwCache<K, V> {
 
+    long cacheSize();
+
     void put(K key, V value);
 
     void remove(K key);
