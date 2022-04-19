@@ -16,36 +16,35 @@ public class Client implements Cloneable {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "login")
+    private String login;
+
+    @Column(name = "password")
+    private String password;
+
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "address_id")
     private Address address;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, mappedBy = "client")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<Phone> phones;
+
 
     public Client() {
     }
 
-    public Client(String name) {
-        this.id = null;
-        this.name = name;
-    }
-
-    public Client(Long id, String name) {
+    public Client(Long id, String name, String login, String password, Address address, List<Phone> phones) {
         this.id = id;
         this.name = name;
-    }
-
-    public Client(Long id, String name, Address address, List<Phone> phones) {
-        this.id = id;
-        this.name = name;
+        this.login = login;
+        this.password = password;
         this.address = address;
         this.setPhones(phones);
     }
 
     @Override
     public Client clone() {
-        return new Client(this.id, this.name, this.address, this.phones);
+        return new Client(id, name, login, password, address, phones);
     }
 
     public Long getId() {
@@ -56,8 +55,16 @@ public class Client implements Cloneable {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getLogin() {
+        return login;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public Address getAddress() {
+        return address;
     }
 
     public List<Phone> getPhones() {
@@ -66,10 +73,6 @@ public class Client implements Cloneable {
 
     public void setPhones(List<Phone> phones) {
         this.phones = phones;
-
-        if (this.phones != null) {
-            this.phones.forEach(ph -> ph.setClient(this));
-        }
     }
 
     @Override
