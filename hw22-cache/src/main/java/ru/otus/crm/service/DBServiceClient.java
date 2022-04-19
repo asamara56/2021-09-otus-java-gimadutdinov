@@ -11,9 +11,7 @@ public interface DBServiceClient {
 
     Client saveClient(Client client);
 
-    Optional<Client> getClientWithCache(long id);
-
-    Optional<Client> getClient(long id);
+    Optional<Client> getClient(Long id);
 
     List<Client> findAll();
 }

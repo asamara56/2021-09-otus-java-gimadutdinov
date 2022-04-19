@@ -1,10 +1,7 @@
 package ru.otus.cachehw;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
 public class MyCache<K, V> implements HwCache<K, V> {
 //Надо реализовать эти методы
@@ -37,10 +34,8 @@ public class MyCache<K, V> implements HwCache<K, V> {
     }
 
     @Override
-    public V get(K key) {
-        V value = cache.get(key);
-        //listeners.forEach(listener -> listener.notify(key, value, "GET")); //очень много логов
-        return value;
+    public Optional<V> get(K key) {
+        return Optional.ofNullable(cache.get(key));
     }
 
     @Override

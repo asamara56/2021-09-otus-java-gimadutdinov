@@ -35,24 +35,22 @@ public class HomeWork {
 
         List<Long> ids = new ArrayList<>();
 
-        for (int i = 1; i < 40001; i++) {
+        for (int i = 0; i < 1000; i++) {
             ids.add(dbServiceClient
                     .saveClient(new Client("client_" + i))
                     .getId());
 
-            if (i % 100 == 0) {
+            /*if (i % 100 == 0) {
                 System.out.println("Cache size: " + dbServiceClient.cacheSize());
-                /**
-                 * Во время наполнения кэша наблюдал интересную вещь в выводе println()
-                 * В первый раз размер кэша сбросился примерно на 2000 элементов,
-                 * затем как будто "растянулся" и второй сброс кэша произошел около 23300 элементов
-                 */
-            }
+            }*/
         }
-
+        /**
+         * Во время наполнения кэша наблюдал интересную вещь в выводе println()
+         * В первый раз размер кэша сбросился примерно на 2000 элементов,
+         * затем как будто "растянулся" и второй сброс кэша произошел около 23300 элементов
+         */
 
         long start = System.currentTimeMillis();
-        log.info("START get clients WITHOUT cache");
 
         for (long i : ids) {
             dbServiceClient.getClient(i);
@@ -61,20 +59,8 @@ public class HomeWork {
                 System.out.println("Cache size: " + dbServiceClient.cacheSize());
             }*/
         }
-        log.info("duration WITHOUT cache. Millis:{}", System.currentTimeMillis() - start);
-
-
-        start = System.currentTimeMillis();
-        log.info("START get clients WITH cache");
-
-        for (long i : ids) {
-            dbServiceClient.getClientWithCache(i);
-
-            /*if (i % 100 == 0) {
-                System.out.println("Cache size: " + dbServiceClient.cacheSize());
-            }*/
-        }
         log.info("duration WITH cache. Millis:{}", System.currentTimeMillis() - start);
+
 
         /**
          * При работе с кэшом выигрыш во времени получал всегда. Но результат зависит от количества элементов.

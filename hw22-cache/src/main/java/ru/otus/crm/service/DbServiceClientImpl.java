@@ -39,63 +39,36 @@ public class DbServiceClientImpl implements DBServiceClient {
     public Client saveClient(Client client) {
         return transactionRunner.doInTransaction(connection -> {
             if (client.getId() == null) {
-                var clientId = dataTemplate.insert(connection, client);
+                Long clientId = dataTemplate.insert(connection, client);
                 var createdClient = new Client(clientId, client.getName());
-                // log.info("created client: {}", createdClient); // очень много логов
-                cache.put("key_" + clientId, createdClient);
+                cache.put(clientId.toString(), createdClient);
                 return createdClient;
             }
             dataTemplate.update(connection, client);
-            // log.info("updated client: {}", client); // очень много логов
-            cache.put(String.valueOf(client.getId()), client);
+            cache.put(client.getId().toString(), client);
             return client;
         });
     }
 
     @Override
-    public Optional<Client> getClientWithCache(long id) {
-        var cacheValue = cache.get("key_" + id);
-        if (cacheValue != null) {
-            return Optional.of(cacheValue);
-        }
-        return transactionRunner.doInTransaction(connection -> {
-            var clientOptional = dataTemplate.findById(connection, id);
-            // log.info("client: {}", clientOptional);  // очень много логов
-            clientOptional.ifPresent(
-                    client -> cache.put("key_" + client.getId(), client));
-            return clientOptional;
-        });
-    }
-
-    @Override
-    public Optional<Client> getClient(long id) {
-        return transactionRunner.doInTransaction(connection -> {
-            var clientOptional = dataTemplate.findById(connection, id);
-            clientOptional.ifPresent(
-                    client -> cache.put("key_" + client.getId(), client));
-            // log.info("client: {}", clientOptional); // очень много логов
-            return clientOptional;
-        });
+    public Optional<Client> getClient(Long id) {
+        return Optional
+                .ofNullable(cache.get(id.toString()))
+                .orElse(transactionRunner.doInTransaction(connection -> {
+                            var clientOptional = dataTemplate.findById(connection, id);
+                            clientOptional.ifPresent(
+                                    client -> cache.put(client.getId().toString(), client));
+                            return clientOptional;
+                        }
+                )
+        );
     }
 
     @Override
     public List<Client> findAll() {
-        /**
-         * Возможно здесь нужно реализовать что-то типа
-         * if (dataTemplate.getClientCount() == cache.size()) {
-         *     return cache.findAll();
-         * }
-         * но сомневаюсь, что в высоконагруженных системах возможен такой кейс
-         */
         return transactionRunner.doInTransaction(connection -> {
             var clientList = dataTemplate.findAll(connection);
             log.info("clientList:{}", clientList);
-            /**
-             * и здесь
-             * clientList.forEach(
-             *       client -> cache.put("key_" + client.getId(), client)
-             * );
-             */
             return clientList;
        });
     }

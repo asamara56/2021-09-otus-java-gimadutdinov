@@ -1,6 +1,8 @@
 package ru.otus.cachehw;
 
 
+import java.util.Optional;
+
 public interface HwCache<K, V> {
 
     long cacheSize();
@@ -9,7 +11,7 @@ public interface HwCache<K, V> {
 
     void remove(K key);
 
-    V get(K key);
+    Optional<V> get(K key);
 
     void addListener(HwListener<K, V> listener);
 
