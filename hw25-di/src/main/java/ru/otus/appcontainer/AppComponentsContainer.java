@@ -1,4 +1,4 @@
-package ru.otus.appcontainer.api;
+package ru.otus.appcontainer;
 
 public interface AppComponentsContainer {
     <C> C getAppComponent(Class<C> componentClass);
