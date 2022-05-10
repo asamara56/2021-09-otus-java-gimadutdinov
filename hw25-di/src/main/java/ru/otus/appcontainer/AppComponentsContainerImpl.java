@@ -4,14 +4,17 @@ import ru.otus.appcontainer.api.AppComponent;
 import ru.otus.appcontainer.api.AppComponentsContainerConfig;
 
 import java.io.File;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.util.*;
 
 public class AppComponentsContainerImpl implements AppComponentsContainer {
 
     private static final char PKG_SEPARATOR = '.';
-    private static final char DIR_SEPARATOR = '/';
+    private static final char DIR_SEPARATOR = System.getProperty("file.separator").toCharArray()[0];
     private static final String CLASS_FILE_SUFFIX = ".class";
 
 
@@ -49,19 +52,44 @@ public class AppComponentsContainerImpl implements AppComponentsContainer {
                 .forEach(this::processConfig);
     }
 
+    @Override
+    public <C> C getAppComponent(Class<C> componentClass) {
+        for (Object component : appComponents) {
+            if (componentClass.isInstance(component)) {
+                return (C) component;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public <C> C getAppComponent(String componentName) {
+        return (C) appComponentsByName.get(componentName);
+    }
+
+
     private void processConfig(Class<?> configClass) {
         checkConfigClass(configClass);
         // You code here...
+        Constructor<?> constructor = Arrays.stream(configClass.getDeclaredConstructors())
+                .filter(c -> c.getParameters().length == 0)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Default constructor not found"));
         try {
-            Object configInstance = configClass.getDeclaredConstructors()[0].newInstance();
-            Arrays.stream(configClass.getDeclaredMethods())
+            final Object configInstance = constructor.newInstance();
+
+            List<Method> methods = Arrays.stream(configClass.getDeclaredMethods())
                     .filter(method -> method.isAnnotationPresent(AppComponent.class))
                     .sorted((m1, m2) -> {
                         Integer o1 = m1.getDeclaredAnnotation(AppComponent.class).order();
                         Integer o2 = m2.getDeclaredAnnotation(AppComponent.class).order();
                         return o1.compareTo(o2);
                     })
-                    .forEach(m -> processComponent(m, configInstance));
+                    .toList();
+
+            for (Method method : methods) {
+                processComponent(method, configInstance);
+            }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
@@ -118,20 +146,5 @@ public class AppComponentsContainerImpl implements AppComponentsContainer {
         if (!configClass.isAnnotationPresent(AppComponentsContainerConfig.class)) {
             throw new IllegalArgumentException(String.format("Given class is not config %s", configClass.getName()));
         }
-    }
-
-    @Override
-    public <C> C getAppComponent(Class<C> componentClass) {
-        for (Object component : appComponents) {
-            if (componentClass.isInstance(component)) {
-                return (C) component;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public <C> C getAppComponent(String componentName) {
-        return (C) appComponentsByName.get(componentName);
     }
 }
